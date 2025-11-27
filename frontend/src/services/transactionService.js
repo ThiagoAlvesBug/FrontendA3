@@ -1,7 +1,7 @@
 // src/services/transactionService.js
 import { getToken, getUserId } from "./authService";
 
-const API_URL = "http://localhost:8082/transactions";
+const API_URL = "http://localhost:8082";
 
 function authHeader() {
   const token = getToken();
@@ -48,6 +48,7 @@ async function request(url, options = {}) {
   }
 }
 
+// Saldo e listagem de transações
 export async function getBalance() {
   const userId = getCurrentUserId();
   return await request(`${API_URL}/balance/${userId}`);
@@ -55,12 +56,13 @@ export async function getBalance() {
 
 export async function getTransactions() {
   const userId = getCurrentUserId();
-  return await request(`${API_URL}/${userId}`);
+  return await request(`${API_URL}/transactions/user/${userId}`);
 }
 
+// Operações de depósito e transferência
 export async function deposit(amount) {
   const userId = getCurrentUserId();
-  return await request(`${API_URL}/deposit`, {
+  return await request(`${API_URL}/transactions/deposit`, {
     method: "POST",
     body: JSON.stringify({ userId, amount })
   });
@@ -68,8 +70,25 @@ export async function deposit(amount) {
 
 export async function transfer(toUserId, amount, description) {
   const fromUserId = getCurrentUserId();
-  return await request(`${API_URL}/transfer`, {
+  return await request(`${API_URL}/transactions/transfer`, {
     method: "POST",
     body: JSON.stringify({ fromUserId, toUserId, amount, description })
   });
 }
+
+// Listagem de transações pendentes
+export async function getPendingTransactions() {
+  const userId = getCurrentUserId();
+  return await request(`${API_URL}/users/${userId}/transactions/pending`);
+}
+
+// Confirmação ou rejeição de transações pendentes
+export async function confirmTransaction(transactionId, accepted) {
+  const userId = getCurrentUserId();
+
+  return await request(
+    `${API_URL}/users/${userId}/transactions/${transactionId}/confirm?accepted=${accepted}`,
+    { method: "PUT" }
+  );
+}
+

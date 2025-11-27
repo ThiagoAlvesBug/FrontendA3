@@ -4,6 +4,8 @@ import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ModalPix from "./ModalPix";
 import { toast } from "react-toastify";
+import {
+getPendingTransactions, confirmTransaction, getBalance, getTransactions} from "../services/transactionService";
 
 function Dashboard() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +13,7 @@ function Dashboard() {
   const [valor, setValor] = useState("");
   const [transacoes, setTransacoes] = useState([]);
   const [saldo, setSaldo] = useState(null);
+  const [pendentes, setPendentes] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -45,7 +48,7 @@ function Dashboard() {
     fetchUser();
   }, [navigate]);
 
-  // 🔥 2. BUSCAR TRANSACOES QUANDO O USER CARREGAR
+  // BUSCAR TRANSACOES QUANDO O USER CARREGAR
   useEffect(() => {
     if (!user?.id) return;
 
@@ -76,7 +79,23 @@ function Dashboard() {
     fetchTransacoes();
   }, [user?.id]);
 
-  // 🔥 3. ADICIONAR SALDO
+  // BUSCAR TRANSAÇÕES PENDENTES
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchPendentes = async () => {
+      try {
+        const pend = await getPendingTransactions();
+        setPendentes(pend);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchPendentes();
+  }, [user?.id]);
+
+  // ADICIONAR SALDO
   const handleAddSaldo = async () => {
     if (!valor || isNaN(valor) || parseFloat(valor) <= 0) {
       toast.info("Digite um valor válido.");
@@ -134,6 +153,42 @@ function Dashboard() {
       setLoading(false);
     }
   };
+
+  // 🔥 4. ACEITAR OU REJEITAR PIX
+  async function handleAccept(id) {
+    try {
+      await confirmTransaction(id, true);
+      toast.success("Pix aceito!");
+
+      // recarrega pendentes
+      const pend = await getPendingTransactions();
+      setPendentes(pend);
+
+      // recarrega extrato
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:8082/users/${user.id}/transactions`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      setTransacoes(data);
+    } catch (error) {
+      toast.error("Erro ao aceitar Pix!");
+    }
+  }
+
+  async function handleReject(id) {
+    try {
+      await confirmTransaction(id, false);
+      toast.info("Pix rejeitado.");
+
+      // recarrega pendentes
+      const pend = await getPendingTransactions();
+      setPendentes(pend);
+    } catch (error) {
+      toast.error("Erro ao rejeitar Pix!");
+    }
+  }
 
   // 🔥 4. LOGOUT
   const handleLogout = () => {
@@ -320,7 +375,7 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* SALDO SIMPLES E LIMPO */}
+          {/* SALDO */}
           <div className="bg-[#0c0c22] p-6 rounded-xl shadow-lg mb-10 text-center md:text-left">
             <h3 className="text-lg text-gray-400 mb-2">Saldo disponível</h3>
 
@@ -333,8 +388,8 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* TRANSAÇÕES */}
-          <div>
+          {/* ÚLTIMAS TRANSACOES */}
+          <div className="mb-14">
             <h3 className="text-xl md:text-2xl font-semibold mb-4 text-[#FF0066]">
               Últimas transações
             </h3>
@@ -360,16 +415,14 @@ function Dashboard() {
                       </td>
                     </tr>
                   ) : (
-                    transacoes.map((t) => {
+                    transacoes.slice(0, 3).map((t) => {
                       const isEntrada = user && t.type === "CREDIT";
 
                       return (
                         <tr key={t.id}>
                           <td className="py-3">
                             {t.createdAt
-                              ? new Date(t.createdAt).toLocaleString(
-                                  "pt-BR"
-                                )
+                              ? new Date(t.createdAt).toLocaleString("pt-BR")
                               : ""}
                           </td>
                           <td>{t.description}</td>
@@ -378,8 +431,7 @@ function Dashboard() {
                               isEntrada ? "text-green-400" : "text-red-400"
                             }
                           >
-                            {isEntrada ? "+ " : "- "}
-                            R${" "}
+                            {isEntrada ? "+ " : "- "}R{" "}
                             {Number(Math.abs(t.amount || 0)).toLocaleString(
                               "pt-BR",
                               { minimumFractionDigits: 2 }
@@ -396,14 +448,75 @@ function Dashboard() {
                     <th className="pb-3"></th>
                     <th className="pb-3"></th>
                     <th className="pb-3">
-                      {saldo >= 0 ? "+ " : "- "}
-                      R${" "}
+                      {saldo >= 0 ? "+ " : "- "}R{" "}
                       {Number(Math.abs(saldo)).toLocaleString("pt-BR", {
                         minimumFractionDigits: 2,
                       })}
                     </th>
                   </tr>
                 </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* AREA DE TRANSACOES PENDENTES */}
+          <div className="mt-10">
+            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-[#FF0066]">
+              Transações Pendentes
+            </h3>
+
+            <div className="bg-[#0c0c22] rounded-xl p-4 md:p-6 shadow-lg overflow-x-auto">
+              <table className="w-full text-left min-w-[400px] text-sm md:text-base">
+                <thead className="text-gray-400">
+                  <tr>
+                    <th className="pb-3">Data</th>
+                    <th className="pb-3">Descrição</th>
+                    <th className="pb-3">Valor</th>
+                    <th className="pb-3">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-gray-700">
+                  {pendentes.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="text-center py-4 text-gray-400"
+                      >
+                        Nenhuma transação pendente.
+                      </td>
+                    </tr>
+                  ) : (
+                    pendentes.map((p) => (
+                      <tr key={p.id}>
+                        <td className="py-3">
+                          {new Date(p.createdAt).toLocaleString("pt-BR")}
+                        </td>
+                        <td>{p.description}</td>
+                        <td className="text-yellow-300">
+                          R{" "}
+                          {Number(p.amount).toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="flex gap-3 py-2">
+                          <button
+                            onClick={() => handleAccept(p.id)}
+                            className="px-3 py-1 bg-green-500 hover:bg-green-600 rounded-md text-white transition"
+                          >
+                            Aceitar
+                          </button>
+                          <button
+                            onClick={() => handleReject(p.id)}
+                            className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md text-white transition"
+                          >
+                            Rejeitar
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
               </table>
             </div>
           </div>
