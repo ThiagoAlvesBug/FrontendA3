@@ -4,8 +4,6 @@ import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ModalPix from "./ModalPix";
 import { toast } from "react-toastify";
-import {
-getPendingTransactions, confirmTransaction, getBalance, getTransactions} from "../services/transactionService";
 
 function Dashboard() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,7 +11,7 @@ function Dashboard() {
   const [valor, setValor] = useState("");
   const [transacoes, setTransacoes] = useState([]);
   const [saldo, setSaldo] = useState(null);
-  const [pendentes, setPendentes] = useState([]);
+  const [pending, setPending] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -48,7 +46,7 @@ function Dashboard() {
     fetchUser();
   }, [navigate]);
 
-  // BUSCAR TRANSACOES QUANDO O USER CARREGAR
+  // 🔥 2. BUSCAR TRANSACOES QUANDO O USER CARREGAR
   useEffect(() => {
     if (!user?.id) return;
 
@@ -62,12 +60,15 @@ function Dashboard() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-
         const data = await response.json();
-        setTransacoes(data);
+        setTransacoes(Array.isArray(data) ? data : []);
+        
+        // Calcula saldo a partir de senderId e receiverId
         const updatedSaldo = data.reduce((acc, transaction) => {
-          if (transaction.type === "CREDIT") return acc + transaction.amount;
-          return acc - transaction.amount;
+          if (transaction.receiverId === user.id)
+            return acc + transaction.amount;
+          if (transaction.senderId === user.id) return acc - transaction.amount;
+          return acc;
         }, 0);
 
         setSaldo(updatedSaldo);
@@ -79,118 +80,77 @@ function Dashboard() {
     fetchTransacoes();
   }, [user?.id]);
 
-  // BUSCAR TRANSAÇÕES PENDENTES
+  // 🔥 3. BUSCAR TRANSACOES PENDENTES
   useEffect(() => {
     if (!user?.id) return;
 
-    const fetchPendentes = async () => {
+    const fetchPending = async () => {
       try {
-        const pend = await getPendingTransactions();
-        setPendentes(pend);
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `http://localhost:8082/users/${user.id}/transactions/pending`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const data = await response.json();
+        setPending(data);
       } catch (error) {
-        console.error(error);
+        toast.error("Erro ao carregar transações pendentes");
       }
     };
 
-    fetchPendentes();
+    fetchPending();
   }, [user?.id]);
 
-  // ADICIONAR SALDO
-  const handleAddSaldo = async () => {
-    if (!valor || isNaN(valor) || parseFloat(valor) <= 0) {
-      toast.info("Digite um valor válido.");
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-
+  // 🔥 4. CONFIRMAR TRANSACAO
+  const handleConfirm = async (transactionId, accepted) => {
     try {
-      setLoading(true);
+      const token = localStorage.getItem("token");
 
-      await fetch("http://localhost:8082/transactions/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          valor: parseFloat(valor),
-          descricao: "Depósito",
-          tipo: "ENTRADA",
-        }),
-      });
-
-      // atualizar saldo no serviço de usuarios
-      const responseUser = await fetch(
-        `http://localhost:8082/users/${user.id}/add-saldo`,
+      const response = await fetch(
+        `http://localhost:8082/users/${user.id}/transactions/${transactionId}/confirm?accepted=${accepted}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ valor: parseFloat(valor) }),
         }
       );
 
-      const updatedUser = await responseUser.json();
-      setUser(updatedUser);
-      setValor("");
+      if (!response.ok) {
+        toast.error("Erro ao atualizar transação");
+        return;
+      }
 
-      // recarregar transações
-      const responseTrans = await fetch(
-        `http://localhost:8082/transactions/user/${user.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const transData = await responseTrans.json();
-      setTransacoes(transData);
+      toast.success(accepted ? "Transação aprovada!" : "Transação rejeitada!");
 
-      toast.success("Saldo adicionado!");
-    } catch (error) {
-      toast.error(`Erro ao adicionar saldo: ${error}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+      // remover da lista de pendentes
+      setPending((prev) => prev.filter((t) => t.id !== transactionId));
 
-  // 🔥 4. ACEITAR OU REJEITAR PIX
-  async function handleAccept(id) {
-    try {
-      await confirmTransaction(id, true);
-      toast.success("Pix aceito!");
-
-      // recarrega pendentes
-      const pend = await getPendingTransactions();
-      setPendentes(pend);
-
-      // recarrega extrato
-      const token = localStorage.getItem("token");
-      const response = await fetch(
+      // atualizar extrato completo
+      const transResponse = await fetch(
         `http://localhost:8082/users/${user.id}/transactions`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const data = await response.json();
-      setTransacoes(data);
+      const transData = await transResponse.json();
+      setTransacoes(transData);
+
+      // atualizar saldo
+      const saldoResponse = await fetch(
+        `http://localhost:8082/users/${user.id}/balance`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const novoSaldo = await saldoResponse.text();
+      setSaldo(Number(novoSaldo));
     } catch (error) {
-      toast.error("Erro ao aceitar Pix!");
+      toast.error("Erro ao confirmar transação");
     }
-  }
+  };
 
-  async function handleReject(id) {
-    try {
-      await confirmTransaction(id, false);
-      toast.info("Pix rejeitado.");
-
-      // recarrega pendentes
-      const pend = await getPendingTransactions();
-      setPendentes(pend);
-    } catch (error) {
-      toast.error("Erro ao rejeitar Pix!");
-    }
-  }
-
-  // 🔥 4. LOGOUT
+  // 🔥 5. LOGOUT
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
@@ -375,7 +335,7 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* SALDO */}
+          {/* SALDO SIMPLES E LIMPO */}
           <div className="bg-[#0c0c22] p-6 rounded-xl shadow-lg mb-10 text-center md:text-left">
             <h3 className="text-lg text-gray-400 mb-2">Saldo disponível</h3>
 
@@ -388,8 +348,53 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* ÚLTIMAS TRANSACOES */}
-          <div className="mb-14">
+          {pending.length > 0 && (
+            <div className="bg-[#0c0c22] p-6 rounded-xl shadow-lg mb-10">
+              <h3 className="text-xl font-semibold text-[#FF0066] mb-4">
+                PIX pendentes de confirmação
+              </h3>
+
+              <div className="space-y-4">
+                {pending.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex justify-between items-center border-b border-gray-700 pb-3"
+                  >
+                    <div>
+                      <p className="text-white">
+                        <strong>De:</strong> Usuário {p.senderId}
+                      </p>
+                      <p className="text-white">
+                        <strong>Valor:</strong> R${" "}
+                        {Number(p.amount).toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded"
+                        onClick={() => handleConfirm(p.id, true)}
+                      >
+                        Aceitar
+                      </button>
+
+                      <button
+                        className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+                        onClick={() => handleConfirm(p.id, false)}
+                      >
+                        Rejeitar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TRANSAÇÕES */}
+          <div>
             <h3 className="text-xl md:text-2xl font-semibold mb-4 text-[#FF0066]">
               Últimas transações
             </h3>
@@ -416,7 +421,7 @@ function Dashboard() {
                     </tr>
                   ) : (
                     transacoes.slice(0, 3).map((t) => {
-                      const isEntrada = user && t.type === "CREDIT";
+                      const isEntrada = t.receiverId === user.id;
 
                       return (
                         <tr key={t.id}>
@@ -431,7 +436,8 @@ function Dashboard() {
                               isEntrada ? "text-green-400" : "text-red-400"
                             }
                           >
-                            {isEntrada ? "+ " : "- "}R{" "}
+                            {isEntrada ? "+ " : "- "}
+                            R${" "}
                             {Number(Math.abs(t.amount || 0)).toLocaleString(
                               "pt-BR",
                               { minimumFractionDigits: 2 }
@@ -448,75 +454,14 @@ function Dashboard() {
                     <th className="pb-3"></th>
                     <th className="pb-3"></th>
                     <th className="pb-3">
-                      {saldo >= 0 ? "+ " : "- "}R{" "}
+                      {saldo >= 0 ? "+ " : "- "}
+                      R${" "}
                       {Number(Math.abs(saldo)).toLocaleString("pt-BR", {
                         minimumFractionDigits: 2,
                       })}
                     </th>
                   </tr>
                 </tfoot>
-              </table>
-            </div>
-          </div>
-
-          {/* AREA DE TRANSACOES PENDENTES */}
-          <div className="mt-10">
-            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-[#FF0066]">
-              Transações Pendentes
-            </h3>
-
-            <div className="bg-[#0c0c22] rounded-xl p-4 md:p-6 shadow-lg overflow-x-auto">
-              <table className="w-full text-left min-w-[400px] text-sm md:text-base">
-                <thead className="text-gray-400">
-                  <tr>
-                    <th className="pb-3">Data</th>
-                    <th className="pb-3">Descrição</th>
-                    <th className="pb-3">Valor</th>
-                    <th className="pb-3">Ações</th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-gray-700">
-                  {pendentes.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="text-center py-4 text-gray-400"
-                      >
-                        Nenhuma transação pendente.
-                      </td>
-                    </tr>
-                  ) : (
-                    pendentes.map((p) => (
-                      <tr key={p.id}>
-                        <td className="py-3">
-                          {new Date(p.createdAt).toLocaleString("pt-BR")}
-                        </td>
-                        <td>{p.description}</td>
-                        <td className="text-yellow-300">
-                          R{" "}
-                          {Number(p.amount).toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="flex gap-3 py-2">
-                          <button
-                            onClick={() => handleAccept(p.id)}
-                            className="px-3 py-1 bg-green-500 hover:bg-green-600 rounded-md text-white transition"
-                          >
-                            Aceitar
-                          </button>
-                          <button
-                            onClick={() => handleReject(p.id)}
-                            className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md text-white transition"
-                          >
-                            Rejeitar
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
               </table>
             </div>
           </div>
