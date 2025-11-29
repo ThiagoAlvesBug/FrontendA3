@@ -172,7 +172,7 @@ function Dashboard() {
       <div className="flex flex-col md:flex-row min-h-screen bg-[#141333] text-white overflow-x-hidden">
         {/* Botão para Mobile */}
         <button
-          className="md:hidden fixed top-4 left-4 z-40 bg-[#FF0066] p-2 rounded-md hover:bg-[#be004c] transition"
+          className="md:hidden cursor-pointer fixed top-4 left-4 z-40 bg-[#FF0066] p-2 rounded-md hover:bg-[#be004c] transition"
           onClick={() => setIsOpen(true)}
         >
           <Menu size={24} />
