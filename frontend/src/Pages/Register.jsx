@@ -192,7 +192,6 @@ function Register() {
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Confirmar senha
             </label>
-
             <div className="relative">
               <input
                 name="confirmarSenha"

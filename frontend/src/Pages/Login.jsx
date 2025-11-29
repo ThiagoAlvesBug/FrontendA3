@@ -15,11 +15,11 @@ function Login() {
 
   try {
     const data = await login({ email, password: senha });
-    // Salvar no localStorage
+    // Salvando no localStorage
     localStorage.setItem("token", data.token);
     localStorage.setItem("userId", data.userId);
 
-    // Redirecionar corretamente
+    // Redirecionando para dashboard (baseado no usuário logado)
     navigate(`/dashboard/${data.userId}`);
 
   } catch (err) {
@@ -27,7 +27,6 @@ function Login() {
     setError("Credenciais inválidas ou erro no servidor.");
   }
 };
-
 
   return (
     <motion.div

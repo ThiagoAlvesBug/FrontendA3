@@ -35,19 +35,19 @@ async function request(url, options = {}) {
   return isJson ? await response.json() : await response.text();
 }
 
-// SALDO
+// Saldo
 export async function getBalance() {
   const userId = getCurrentUserId();
   return await request(`${API_URL}/balance/${userId}`);
 }
 
-// TODAS AS TRANSAÇÕES DO USUÁRIO (enviadas e recebidas)
+// Histórico de transações do usuário
 export async function getTransactions() {
   const userId = getCurrentUserId();
   return await request(`${API_URL}/user/${userId}`);
 }
 
-// DEPÓSITO (agora usa receiverId)
+// Depósito
 export async function deposit(amount) {
   const receiverId = getCurrentUserId();
   return await request(`${API_URL}/deposit`, {

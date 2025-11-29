@@ -95,7 +95,7 @@ function ModalPix({ isOpen, onClose }) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email */}
+              {/* Input (email) */}
               <div className="space-y-1">
                 <label className="text-1xl font-medium text-gray-300">
                   E-mail do destinatário

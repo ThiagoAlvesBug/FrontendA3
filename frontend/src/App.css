@@ -8,3 +8,22 @@ html, body {
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
 }
+
+/* Scrollbar customizado do modal de extrato */
+.modal-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+  background: #141333; 
+  border-radius: 10px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: #FF0066;
+  border-radius: 10px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: #cc0052; /* tom mais escuro */
+}

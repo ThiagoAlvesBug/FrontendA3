@@ -1,6 +1,8 @@
 
 import { X } from "lucide-react";
 
+// Criando o modal pai
+
 function Modal({ isOpen, onClose, children }) {
   if (!isOpen) return null;
 

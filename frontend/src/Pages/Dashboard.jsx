@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ModalPix from "./ModalPix";
+import ModalExtrato from "../components/ModalExtrato";
 import { toast } from "react-toastify";
 
 function Dashboard() {
@@ -13,9 +14,11 @@ function Dashboard() {
   const [saldo, setSaldo] = useState(null);
   const [pending, setPending] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openExtrato, setOpenExtrato] = useState(false);
+
   const navigate = useNavigate();
 
-  // 🔥 1. CHECK LOGIN + BUSCAR USUÁRIO
+  // Checando o Login e buscando o usuário
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
@@ -46,7 +49,7 @@ function Dashboard() {
     fetchUser();
   }, [navigate]);
 
-  // 🔥 2. BUSCAR TRANSACOES QUANDO O USER CARREGAR
+  // Buscando todas as transações daquele usuário
   useEffect(() => {
     if (!user?.id) return;
 
@@ -62,11 +65,10 @@ function Dashboard() {
         );
         const data = await response.json();
         setTransacoes(Array.isArray(data) ? data : []);
-        
-        // Calcula saldo a partir de senderId e receiverId
+
+        // Calculando saldo a partir de senderId e receiverId
         const updatedSaldo = data.reduce((acc, transaction) => {
-          if(transaction.status !== 'CONFIRMED')
-            return acc;
+          if (transaction.status !== "CONFIRMED") return acc;
           if (transaction.receiverId === user.id)
             return acc + transaction.amount;
           if (transaction.senderId === user.id) return acc - transaction.amount;
@@ -82,7 +84,7 @@ function Dashboard() {
     fetchTransacoes();
   }, [user?.id]);
 
-  // 🔥 3. BUSCAR TRANSACOES PENDENTES
+  // Buscando transações pendentes
   useEffect(() => {
     if (!user?.id) return;
 
@@ -106,7 +108,7 @@ function Dashboard() {
     fetchPending();
   }, [user?.id]);
 
-  // 🔥 4. CONFIRMAR TRANSACAO
+  // Confirmando a transação
   const handleConfirm = async (transactionId, accepted) => {
     try {
       const token = localStorage.getItem("token");
@@ -129,10 +131,10 @@ function Dashboard() {
 
       toast.success(accepted ? "Transação aprovada!" : "Transação rejeitada!");
 
-      // remover da lista de pendentes
+      // Removendo a transação da lista de pendentes
       setPending((prev) => prev.filter((t) => t.id !== transactionId));
 
-      // atualizar extrato completo
+      // Atualizando o extrato completo
       const transResponse = await fetch(
         `http://localhost:8082/users/${user.id}/transactions`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -140,7 +142,7 @@ function Dashboard() {
       const transData = await transResponse.json();
       setTransacoes(transData);
 
-      // atualizar saldo
+      // Atualizando o saldo
       const saldoResponse = await fetch(
         `http://localhost:8082/users/${user.id}/balance`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -152,7 +154,7 @@ function Dashboard() {
     }
   };
 
-  // 🔥 5. LOGOUT
+  // Fazendo Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
@@ -168,7 +170,7 @@ function Dashboard() {
       transition={{ duration: 0.6 }}
     >
       <div className="flex flex-col md:flex-row min-h-screen bg-[#141333] text-white overflow-x-hidden">
-        {/* BOTÃO MOBILE */}
+        {/* Botão para Mobile */}
         <button
           className="md:hidden fixed top-4 left-4 z-40 bg-[#FF0066] p-2 rounded-md hover:bg-[#be004c] transition"
           onClick={() => setIsOpen(true)}
@@ -176,7 +178,7 @@ function Dashboard() {
           <Menu size={24} />
         </button>
 
-        {/* SIDEBAR DESKTOP */}
+        {/* Barra lateral desktop */}
         <aside className="hidden md:flex md:flex-col bg-[#0c0c22] p-6 w-64 h-screen sticky top-0">
           <div className="flex flex-col justify-between h-full">
             <div>
@@ -185,6 +187,7 @@ function Dashboard() {
               </h1>
 
               <nav className="space-y-3">
+                {/* Visão Geral */}
                 <button
                   onClick={() =>
                     toast.info("Ops! Funcionalidade em construção.")
@@ -194,6 +197,7 @@ function Dashboard() {
                   Visão Geral
                 </button>
 
+                {/* Transferências */}
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#FF0066]/20 transition"
@@ -201,14 +205,14 @@ function Dashboard() {
                   Transferência via Pix
                 </button>
 
+                {/* Extrato */}
                 <button
-                  onClick={() =>
-                    toast.info("Ops! Funcionalidade em construção.")
-                  }
+                  onClick={() => setOpenExtrato(true)}
                   className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#FF0066]/20 transition"
                 >
                   Extrato
                 </button>
+                {/* Cartões */}
                 <button
                   onClick={() =>
                     toast.info("Ops! Funcionalidade em construção.")
@@ -217,6 +221,8 @@ function Dashboard() {
                 >
                   Cartões
                 </button>
+
+                {/* Configurações */}
                 <button
                   onClick={() =>
                     toast.info("Ops! Funcionalidade em construção.")
@@ -237,7 +243,7 @@ function Dashboard() {
           </div>
         </aside>
 
-        {/* SIDEBAR MOBILE */}
+        {/* Barra lateral para Mobile */}
         <AnimatePresence>
           {isOpen && (
             <>
@@ -271,6 +277,7 @@ function Dashboard() {
                     </h1>
 
                     <nav className="space-y-4">
+                      {/* Visão Geral */}
                       <button
                         onClick={() =>
                           toast.info("Ops! Funcionalidade em construção.")
@@ -279,20 +286,24 @@ function Dashboard() {
                       >
                         Visão Geral
                       </button>
+
+                      {/* Transferência */}
                       <button
                         onClick={() => setIsModalOpen(true)}
                         className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#FF0066]/20 transition"
                       >
                         Transferência via Pix
                       </button>
+
+                      {/* Extrato */}
                       <button
-                        onClick={() =>
-                          toast.info("Ops! Funcionalidade em construção.")
-                        }
+                        onClick={() => setOpenExtrato(true)}
                         className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#FF0066]/20 transition"
                       >
                         Extrato
                       </button>
+
+                      {/* Cartões */}
                       <button
                         onClick={() =>
                           toast.info("Ops! Funcionalidade em construção.")
@@ -301,6 +312,8 @@ function Dashboard() {
                       >
                         Cartões
                       </button>
+
+                      {/* Configurações */}
                       <button
                         onClick={() =>
                           toast.info("Ops! Funcionalidade em construção.")
@@ -324,9 +337,9 @@ function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* CONTEÚDO PRINCIPAL */}
+        {/* Conteúdo da página */}
         <main className="flex-1 p-6 md:p-10 mt-16 md:mt-0 transition-all">
-          {/* HEADER */}
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-2">
             <h2 className="text-2xl md:text-3xl font-bold text-[#FF0066]">
               Bem-vindo, {user ? user.name : "Carregando..."}
@@ -337,7 +350,7 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* SALDO SIMPLES E LIMPO */}
+          {/* Saldo da conta */}
           <div className="bg-[#0c0c22] p-6 rounded-xl shadow-lg mb-10 text-center md:text-left">
             <h3 className="text-lg text-gray-400 mb-2">Saldo disponível</h3>
 
@@ -395,7 +408,7 @@ function Dashboard() {
             </div>
           )}
 
-          {/* TRANSAÇÕES */}
+          {/* Área de Transações */}
           <div>
             <h3 className="text-xl md:text-2xl font-semibold mb-4 text-[#FF0066]">
               Últimas transações
@@ -433,6 +446,8 @@ function Dashboard() {
                               : ""}
                           </td>
                           <td>{t.description}</td>
+
+                          {/* Alterando a cor conforme o tipo (entrada ou saída) */}
                           <td
                             className={
                               isEntrada ? "text-green-400" : "text-red-400"
@@ -469,6 +484,8 @@ function Dashboard() {
           </div>
         </main>
       </div>
+      
+      <ModalExtrato open={openExtrato} onClose={() => setOpenExtrato(false)} transacoes={transacoes}/>
 
       <ModalPix isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </motion.div>

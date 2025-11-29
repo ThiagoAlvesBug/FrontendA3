@@ -1,6 +1,6 @@
 const API_URL = "http://localhost:8080/auth";
 
-//  Registro de novo usuário
+//  Registrando novo usuário
 export async function register(user) {
   const response = await fetch(`${API_URL}/register`, {
     method: "POST",
@@ -15,7 +15,7 @@ export async function register(user) {
   return await response.json();
 }
 
-// Login de usuário existente
+// Login só aceita usuário existente
 export async function login(credentials) {
   const response = await fetch("http://localhost:8080/auth/login", {
     method: "POST",
@@ -29,7 +29,7 @@ export async function login(credentials) {
     throw new Error("Credenciais inválidas");
   }
 
-  return await response.json(); // <--- ESSENCIAL
+  return await response.json();
 }
 
 
@@ -47,7 +47,7 @@ export function getUserId() {
   return localStorage.getItem("userId");
 }
 
-// Buscar informações do usuário pelo auth-service (porta 8080)
+// Buscando informações do usuário pelo auth-service
 export async function getUserById(userId) {
     const token = localStorage.getItem("token");
 
