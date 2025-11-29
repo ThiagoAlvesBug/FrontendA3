@@ -65,6 +65,8 @@ function Dashboard() {
         
         // Calcula saldo a partir de senderId e receiverId
         const updatedSaldo = data.reduce((acc, transaction) => {
+          if(transaction.status !== 'CONFIRMED')
+            return acc;
           if (transaction.receiverId === user.id)
             return acc + transaction.amount;
           if (transaction.senderId === user.id) return acc - transaction.amount;
