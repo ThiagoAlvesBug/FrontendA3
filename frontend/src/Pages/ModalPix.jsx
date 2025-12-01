@@ -3,7 +3,7 @@ import Modal from "../components/Modal";
 import { useState } from "react";
 import { toast } from "react-toastify";
 
-function ModalPix({ isOpen, onClose }) {
+function ModalPix({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -49,6 +49,7 @@ function ModalPix({ isOpen, onClose }) {
       }
       toast.success(data.message || "Pix enviado com sucesso!");
 
+      onSuccess();
       onClose();
     } catch (err) {
       console.error(err);

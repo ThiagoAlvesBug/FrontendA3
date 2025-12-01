@@ -6,17 +6,95 @@ import ModalPix from "./ModalPix";
 import ModalExtrato from "../components/ModalExtrato";
 import { toast } from "react-toastify";
 
-function Dashboard() {
+export default function Dashboard() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [valor, setValor] = useState("");
-  const [transacoes, setTransacoes] = useState([]);
+  const [transacoesEfetivadas, setTransacoesEfetivadas] = useState([]);
+  const [transacoesPendentes, setTransacoesPendentes] = useState([]);
   const [saldo, setSaldo] = useState(null);
   const [pending, setPending] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openExtrato, setOpenExtrato] = useState(false);
 
+  const userId = localStorage.getItem("userId");
+  const token = localStorage.getItem("token");
+
   const navigate = useNavigate();
+
+  const fetchBalance = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8082/users/${userId}/balance`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Erro ao buscar saldo");
+      }
+
+      const data = await response.text();
+      setSaldo(Number(data));
+    } catch (error) {
+      toast.error("Erro ao buscar saldo: " + error);
+    }
+  };
+
+  const fetchUser = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        console.log("123");
+        navigate("/login");
+        return;
+      }
+      const data = await response.json();
+      setUser(data);
+    } catch (error) {
+      console.log("Erro ao buscar usuário: " + error);
+      console.log("456");
+      navigate("/login");
+    }
+  };
+
+  const fetchTransacoesEfetivadas = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `http://localhost:8082/users/${user.id}/transactions/confirmed`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await response.json();
+      setTransacoesEfetivadas(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error("Erro ao carregar transações: " + error);
+    }
+  };
+
+  const fetchTransacoesPendentes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `http://localhost:8082/users/${user.id}/transactions/pending`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await response.json();
+      setTransacoesPendentes(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error("Erro ao carregar transações: " + error);
+    }
+  };
 
   // Checando o Login e buscando o usuário
   useEffect(() => {
@@ -28,64 +106,20 @@ function Dashboard() {
       return;
     }
 
-    const fetchUser = async () => {
-      try {
-        const response = await fetch(`http://localhost:8080/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          navigate("/login");
-          return;
-        }
-        const data = await response.json();
-        setUser(data);
-      } catch (error) {
-        toast.error("Erro ao buscar usuário: " + error);
-        navigate("/login");
-      }
-    };
-
     fetchUser();
+    fetchBalance();
   }, [navigate]);
 
   // Buscando todas as transações daquele usuário
   useEffect(() => {
     if (!user?.id) return;
 
-    const fetchTransacoes = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const response = await fetch(
-          `http://localhost:8082/users/${user.id}/transactions`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = await response.json();
-        setTransacoes(Array.isArray(data) ? data : []);
-
-        // Calculando saldo a partir de senderId e receiverId
-        const updatedSaldo = data.reduce((acc, transaction) => {
-          if (transaction.status !== "CONFIRMED") return acc;
-          if (transaction.receiverId === user.id)
-            return acc + transaction.amount;
-          if (transaction.senderId === user.id) return acc - transaction.amount;
-          return acc;
-        }, 0);
-
-        setSaldo(updatedSaldo);
-      } catch (error) {
-        toast.error("Erro ao carregar transações: " + error);
-      }
-    };
-
-    fetchTransacoes();
+    fetchTransacoesEfetivadas();
+    fetchTransacoesPendentes();
   }, [user?.id]);
 
   // Buscando transações pendentes
-  useEffect(() => {
+  /*useEffect(() => {
     if (!user?.id) return;
 
     const fetchPending = async () => {
@@ -99,14 +133,14 @@ function Dashboard() {
         );
 
         const data = await response.json();
-        setPending(data);
+        transacoesPendentes(data);
       } catch (error) {
         toast.error("Erro ao carregar transações pendentes");
       }
     };
 
     fetchPending();
-  }, [user?.id]);
+  }, [user?.id]);*/
 
   // Confirmando a transação
   const handleConfirm = async (transactionId, accepted) => {
@@ -131,11 +165,14 @@ function Dashboard() {
 
       toast.success(accepted ? "Transação aprovada!" : "Transação rejeitada!");
 
+      fetchTransacoesEfetivadas();
+      fetchTransacoesPendentes();
+      fetchBalance();
       // Removendo a transação da lista de pendentes
-      setPending((prev) => prev.filter((t) => t.id !== transactionId));
+      //transacoesPendentes((prev) => prev.filter((t) => t.id !== transactionId));
 
       // Atualizando o extrato completo
-      const transResponse = await fetch(
+      /*const transResponse = await fetch(
         `http://localhost:8082/users/${user.id}/transactions`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -147,8 +184,7 @@ function Dashboard() {
         `http://localhost:8082/users/${user.id}/balance`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const novoSaldo = await saldoResponse.text();
-      setSaldo(Number(novoSaldo));
+      const novoSaldo = await saldoResponse.text();*/
     } catch (error) {
       toast.error("Erro ao confirmar transação");
     }
@@ -289,7 +325,10 @@ function Dashboard() {
 
                       {/* Transferência */}
                       <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => {
+                          setIsModalOpen(true);
+                          setIsOpen(false);
+                        }}
                         className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#FF0066]/20 transition"
                       >
                         Transferência via Pix
@@ -363,27 +402,25 @@ function Dashboard() {
             </p>
           </div>
 
-          {pending.length > 0 && (
+          {transacoesPendentes.length > 0 && (
             <div className="bg-[#0c0c22] p-6 rounded-xl shadow-lg mb-10">
               <h3 className="text-xl font-semibold text-[#FF0066] mb-4">
                 PIX pendentes de confirmação
               </h3>
 
               <div className="space-y-4">
-                {pending.map((p) => (
+                {transacoesPendentes.map((p) => (
                   <div
                     key={p.id}
                     className="flex justify-between items-center border-b border-gray-700 pb-3"
                   >
                     <div>
                       <p className="text-white">
-                        <strong>De:</strong> Usuário {p.senderId}
-                      </p>
-                      <p className="text-white">
-                        <strong>Valor:</strong> R${" "}
+                        Pix de{" "}
                         {Number(p.amount).toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
-                        })}
+                        })}{" "}
+                        pendente de {p.sender.name}
                       </p>
                     </div>
 
@@ -425,7 +462,7 @@ function Dashboard() {
                 </thead>
 
                 <tbody className="divide-y divide-gray-700">
-                  {transacoes.length === 0 ? (
+                  {transacoesEfetivadas.length === 0 ? (
                     <tr>
                       <td
                         colSpan={3}
@@ -435,7 +472,7 @@ function Dashboard() {
                       </td>
                     </tr>
                   ) : (
-                    transacoes.slice(0, 3).map((t) => {
+                    transacoesEfetivadas.slice(0, 3).map((t) => {
                       const isEntrada = t.receiverId === user.id;
 
                       return (
@@ -445,7 +482,11 @@ function Dashboard() {
                               ? new Date(t.createdAt).toLocaleString("pt-BR")
                               : ""}
                           </td>
-                          <td>{t.description}</td>
+                          <td>
+                            {isEntrada
+                              ? `Pix recebido de ${t.sender.name}`
+                              : `Pix enviado para ${t.receiver.name}`}
+                          </td>
 
                           {/* Alterando a cor conforme o tipo (entrada ou saída) */}
                           <td
@@ -484,12 +525,22 @@ function Dashboard() {
           </div>
         </main>
       </div>
-      
-      <ModalExtrato open={openExtrato} onClose={() => setOpenExtrato(false)} transacoes={transacoes}/>
 
-      <ModalPix isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <ModalExtrato
+        open={openExtrato}
+        onClose={() => setOpenExtrato(false)}
+        transacoes={transacoesEfetivadas}
+      />
+
+      <ModalPix
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          fetchTransacoesEfetivadas();
+          fetchTransacoesPendentes();
+          fetchBalance();
+        }}
+      />
     </motion.div>
   );
 }
-
-export default Dashboard;

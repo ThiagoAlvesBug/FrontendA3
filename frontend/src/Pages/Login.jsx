@@ -40,6 +40,10 @@ function Login() {
         <h1 className="text-3xl font-bold text-[#FF007F] text-center mb-6">
           Entrar na Conta
         </h1>
+          <span className="cursor-pointer" onClick={() => {
+            setEmail('banco@bcb.gov.br')
+            setSenha('Banco.123')
+          }}> AUTO LOGIN (REMOVER)</span>
 
         <form className="flex flex-col space-y-4" onSubmit={handleLogin} autoComplete="off">
           <div>
@@ -65,7 +69,7 @@ function Login() {
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              placeholder="Digite sua senha"
+              placeholder="Dgite sua senha"
               className="w-full px-4 py-2 rounded-lg bg-[#1b1b3a] text-white 
                focus:outline-none focus:ring-2 focus:ring-[#FF007F] placeholder-gray-400"
               required
