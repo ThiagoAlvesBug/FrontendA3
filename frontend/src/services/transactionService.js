@@ -1,5 +1,5 @@
 import { getToken, getUserId } from "./authService";
-
+// Definindo URL para requisições de transação
 const API_URL = "http://localhost:8082/transactions";
 
 function authHeader() {
@@ -14,7 +14,7 @@ function authHeader() {
 function getCurrentUserId() {
   return getUserId();
 }
-
+// Executando a requisição
 async function request(url, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -35,19 +35,19 @@ async function request(url, options = {}) {
   return isJson ? await response.json() : await response.text();
 }
 
-// Saldo
+// Requisição de Saldo
 export async function getBalance() {
   const userId = getCurrentUserId();
   return await request(`${API_URL}/balance/${userId}`);
 }
 
-// Histórico de transações do usuário
+// Requisição de Histórico de transações do usuário
 export async function getTransactions() {
   const userId = getCurrentUserId();
   return await request(`${API_URL}/user/${userId}`);
 }
 
-// Depósito
+// Requisição de Depósito
 export async function deposit(amount) {
   const receiverId = getCurrentUserId();
   return await request(`${API_URL}/deposit`, {

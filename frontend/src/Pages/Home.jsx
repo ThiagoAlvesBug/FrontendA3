@@ -11,7 +11,7 @@ function Home() {
       exit={{ opacity: 0, y: -30 }}
       transition={{ duration: 0.6 }}>
     
-      {/* Cabaçalho */}
+      {/* Cabeçalho */}
       <header className="w-full bg-[#0c0c22] text-[#FF0066] flex flex-col
       sm:flex-row justify-between items-center p-4 sm:p-6 shadow-lg">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-0 text-center sm:text-left">

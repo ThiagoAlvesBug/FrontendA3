@@ -1,12 +1,14 @@
 import React from "react";
 import { getUserId } from "../services/authService";
 
+
 export default function ModalExtrato({ open, onClose, transacoes }) {
   if (!open) return null;
-
+  // Definindo qual user está logado
   const userId = Number(getUserId());
 
   return (
+    // Construíndo o modal de Extrato
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50"
       onClick={onClose}
@@ -18,7 +20,7 @@ export default function ModalExtrato({ open, onClose, transacoes }) {
         <h2 className="text-xl font-bold mb-4 text-[#FF0066]">
           Histórico Completo
         </h2>
-
+        {/* Buscando as últimas transações com base no usuário logado */}
         <div className="p-4 modal-scroll overflow-y-auto max-h-[80vh] bg-[#1a1a38] rounded-lg shadow-inner">
           {transacoes.length === 0 ? (
             <p className="text-gray-400">Nenhuma transação encontrada.</p>
@@ -38,7 +40,7 @@ export default function ModalExtrato({ open, onClose, transacoes }) {
                         ? new Date(t.createdAt).toLocaleString("pt-BR")
                         : "—"}
                     </span>
-
+                    {/* Diferenciando transações de Entrada e Saída */}
                     <span
                       className={
                         isEntrada
@@ -62,7 +64,7 @@ export default function ModalExtrato({ open, onClose, transacoes }) {
             })
           )}
         </div>
-
+        {/* Fechar */}
         <button
           onClick={onClose}
           className="mt-4 w-full bg-[#FF0066] cursor-pointer text-white py-2 rounded-lg hover:bg-[#be004c] transition"

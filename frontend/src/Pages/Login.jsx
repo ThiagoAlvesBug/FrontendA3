@@ -10,25 +10,25 @@ function Login() {
   const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  try {
-    const data = await login({ email, password: senha });
-    // Salvando no localStorage
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("userId", data.userId);
+    try {
+      const data = await login({ email, password: senha });
+      // Salvando no localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userId", data.userId);
 
-    // Redirecionando para dashboard (baseado no usuário logado)
-    navigate(`/dashboard/${data.userId}`);
-
-  } catch (err) {
-    console.error("Erro no login:", err);
-    setError("Credenciais inválidas ou erro no servidor.");
-  }
-};
+      // Redirecionando para dashboard (baseado no usuário logado)
+      navigate(`/dashboard/${data.userId}`);
+    } catch (err) {
+      console.error("Erro no login:", err);
+      setError("Credenciais inválidas ou erro no servidor.");
+    }
+  };
 
   return (
+    // Animação de Fade in/out
     <motion.div
       className="flex flex-col items-center justify-center min-h-screen bg-[#0B0B1D] text-white px-6 overflow-x-hidden"
       initial={{ opacity: 0, y: 30 }}
@@ -36,16 +36,35 @@ function Login() {
       exit={{ opacity: 0, y: -30 }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
     >
+      {/* Menu de Login */}
       <div className="bg-[#111133] w-full max-w-md p-6 rounded-2xl shadow-xl border border-[#1e1e3f]">
         <h1 className="text-3xl font-bold text-[#FF007F] text-center mb-6">
+          <span
+            className="text-[#111133] text-sm cursor-pointer"
+            onClick={() => {
+              setEmail("banco@bcb.gov.br");
+              setSenha("Banco.123");
+            }}
+          >
+            BANCO
+          </span>
           Entrar na Conta
+          <span
+            className="text-[#111133] text-sm cursor-pointer"
+            onClick={() => {
+              setEmail("thiago.245.thiago@gmail.com");
+              setSenha("Thiago.123");
+            }}
+          >
+            THIAGO
+          </span>
         </h1>
-          <span className="cursor-pointer" onClick={() => {
-            setEmail('banco@bcb.gov.br')
-            setSenha('Banco.123')
-          }}> AUTO LOGIN (REMOVER)</span>
-
-        <form className="flex flex-col space-y-4" onSubmit={handleLogin} autoComplete="off">
+        <form
+          className="flex flex-col space-y-4"
+          onSubmit={handleLogin}
+          autoComplete="off"
+        >
+        {/* Input de Email */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               E-mail
@@ -60,7 +79,7 @@ function Login() {
               required
             />
           </div>
-
+          {/* Input de Senha */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Senha
@@ -75,7 +94,7 @@ function Login() {
               required
             />
           </div>
-
+        {/* Botão Login (verifica se o user existe) */}
           {error && (
             <p className="text-red-500 text-center text-sm mt-2">{error}</p>
           )}
@@ -89,7 +108,8 @@ function Login() {
             </button>
           </div>
         </form>
-
+        
+        {/* Caso o user não tenha uma conta, é redirecionado para o registro */}
         <div className="text-center mt-6 space-y-3">
           <p className="text-gray-400 text-sm">
             Ainda não tem uma conta?{" "}
@@ -101,6 +121,7 @@ function Login() {
             </Link>
           </p>
 
+        {/* Voltar para o início */}
           <Link to="/">
             <button className="border border-[#FF007F] text-[#FF007F] px-6 py-2 rounded-lg hover:bg-[#FF007F] hover:text-white transition text-sm">
               Voltar para o início

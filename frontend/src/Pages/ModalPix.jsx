@@ -10,7 +10,7 @@ function ModalPix({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    // Definindo o usuário que receberá o PIX
     const emailDestino = e.target.emailDestino.value;
     const valorPix = parseFloat(e.target.valorPix.value);
 
@@ -18,13 +18,13 @@ function ModalPix({ isOpen, onClose, onSuccess }) {
       toast.warn("Preencha e-mail e valor corretamente.");
       return;
     }
-
+    // Salvando o user que está enviando
     try {
       setLoading(true);
 
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
-
+      // Enviando requisição de transação para o banco
       const response = await fetch(
         `http://localhost:8082/users/${userId}/transfer`,
         {
@@ -42,7 +42,7 @@ function ModalPix({ isOpen, onClose, onSuccess }) {
       );
 
       const data = await response.json();
-
+      // Notifica o usuário se o Pix foi enviado ou se houve algum erro
       if (!data.success) {
         toast.error(data.message || "Erro ao enviar Pix");
         return;
@@ -58,7 +58,7 @@ function ModalPix({ isOpen, onClose, onSuccess }) {
       setLoading(false);
     }
   };
-
+  // Construindo o modal PIX
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div

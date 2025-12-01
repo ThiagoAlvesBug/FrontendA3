@@ -7,7 +7,7 @@ import { login } from "../services/authService";
 
 function Register() {
   const navigate = useNavigate();
-
+  // Definindo os campos como vazios
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -22,20 +22,20 @@ function Register() {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Validações de senha
+  // Definindo os requisitos da senha
   const hasNumber = /\d/.test(formData.senha);
   const hasUpper = /[A-Z]/.test(formData.senha);
   const hasLower = /[a-z]/.test(formData.senha);
   const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.senha);
-
+  // Senha e a confirmação devem ser iguais
   const passwordMatches =
     formData.senha.length > 0 && formData.senha === formData.confirmarSenha;
-
+  // Enviando
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-
+    // Valida se a senha cumpre os requisitos
     if (
       hasNumber === false ||
       hasUpper === false ||
@@ -45,12 +45,12 @@ function Register() {
       toast.error("Senha inválida!");
       return;
     }
-
+    // Valida se as senhas batem
     if (!passwordMatches) {
       setError("As senhas não coincidem!");
       return;
     }
-
+    // Mandando a requisição para o banco via requisição HTTP
     try {
       const response = await fetch("http://localhost:8080/auth/register", {
         method: "POST",
@@ -61,7 +61,7 @@ function Register() {
           password: formData.senha,
         }),
       });
-
+      // Verifica se o email ja existe no banco
       if (!response.ok) {
         const errData = await response.json().catch(() => null);
 
@@ -72,7 +72,7 @@ function Register() {
         }
         return;
       }
-
+      // Confirmando que a conta foi criada
       setSuccess("Conta criada com sucesso! Redirecionando...");
 
       const data = await login({ email: formData.email, password: formData.senha });
@@ -88,6 +88,7 @@ function Register() {
   };
 
   return (
+    // Animação Fade in/out
     <motion.div
       className="flex flex-col items-center justify-center min-h-screen 
       bg-[#0B0B1D] text-white px-6 overflow-x-hidden"
@@ -96,6 +97,8 @@ function Register() {
       exit={{ opacity: 0, y: -30 }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
     >
+      
+      {/* Construindo a tela */}
       <div
         className="bg-[#111133] w-full max-w-md sm:max-w-lg 
       p-6 sm:p-8 rounded-2xl shadow-xl border border-[#1e1e3f]"
@@ -214,7 +217,7 @@ function Register() {
               </button>
             </div>
 
-            {/* Regras de senha */}
+            {/* Senhas Conferem */}
             <ul className="text-xs mt-2 space-y-1">
               <li
                 className={passwordMatches ? "text-green-400" : "text-gray-400"}
@@ -238,7 +241,7 @@ function Register() {
           </button>
         </form>
 
-        {/* Links */}
+        {/* Links com a tela de Login e Menu Principal  */}
         <div className="text-center mt-6 space-y-3">
           <p className="text-gray-400 text-xs sm:text-sm">
             Já tem uma conta?{" "}

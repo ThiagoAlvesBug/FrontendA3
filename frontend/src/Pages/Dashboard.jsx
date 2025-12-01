@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -96,6 +96,14 @@ export default function Dashboard() {
     }
   };
 
+  const interval = useCallback(() => {
+    setInterval(() => {
+    fetchBalance();
+    fetchTransacoesEfetivadas();
+    fetchTransacoesPendentes();
+    }, 5000);
+  });
+
   // Checando o Login e buscando o usuário
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -116,6 +124,8 @@ export default function Dashboard() {
 
     fetchTransacoesEfetivadas();
     fetchTransacoesPendentes();
+
+    interval();
   }, [user?.id]);
 
   // Buscando transações pendentes
@@ -401,13 +411,14 @@ export default function Dashboard() {
                 : "Carregando..."}
             </p>
           </div>
-
+          {/* Área de transações pendentes */}
           {transacoesPendentes.length > 0 && (
             <div className="bg-[#0c0c22] p-6 rounded-xl shadow-lg mb-10">
               <h3 className="text-xl font-semibold text-[#FF0066] mb-4">
                 PIX pendentes de confirmação
               </h3>
 
+              {/* Buscando transações pendentes */}
               <div className="space-y-4">
                 {transacoesPendentes.map((p) => (
                   <div
@@ -423,7 +434,7 @@ export default function Dashboard() {
                         pendente de {p.sender.name}
                       </p>
                     </div>
-
+                    {/*  Aceitar PIX  */}
                     <div className="flex gap-2">
                       <button
                         className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded"
@@ -431,7 +442,7 @@ export default function Dashboard() {
                       >
                         Aceitar
                       </button>
-
+                      {/* Rejeitar PIX */}
                       <button
                         className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
                         onClick={() => handleConfirm(p.id, false)}
@@ -445,7 +456,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Área de Transações */}
+          {/* Área de ultimas transações */}
           <div>
             <h3 className="text-xl md:text-2xl font-semibold mb-4 text-[#FF0066]">
               Últimas transações
@@ -460,7 +471,7 @@ export default function Dashboard() {
                     <th className="pb-3">Valor</th>
                   </tr>
                 </thead>
-
+                {/* Buscando últimas transações */}
                 <tbody className="divide-y divide-gray-700">
                   {transacoesEfetivadas.length === 0 ? (
                     <tr>
@@ -472,9 +483,10 @@ export default function Dashboard() {
                       </td>
                     </tr>
                   ) : (
+                    // Limitando às últimas 3 transações
                     transacoesEfetivadas.slice(0, 3).map((t) => {
                       const isEntrada = t.receiverId === user.id;
-
+                      {/* Diferenciando transações de Entrada ou Saída */}
                       return (
                         <tr key={t.id}>
                           <td className="py-3">
@@ -506,7 +518,7 @@ export default function Dashboard() {
                     })
                   )}
                 </tbody>
-
+                {/* Adicionando valores das últimas transações */}
                 <tfoot className="text-gray-400">
                   <tr>
                     <th className="pb-3"></th>
@@ -525,13 +537,13 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
-
+      {/* Enviando para Modal de Extrato */}
       <ModalExtrato
         open={openExtrato}
         onClose={() => setOpenExtrato(false)}
         transacoes={transacoesEfetivadas}
       />
-
+      {/* Enviando para modal de Pix */}
       <ModalPix
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

@@ -3,7 +3,7 @@
 html, body {
   margin: 0;
   padding: 0;
-  background-color: #141333; /* fundo escuro padrão */
+  background-color: #141333; /* fundo escuro por padrão no site */
   color: white;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;

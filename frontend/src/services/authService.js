@@ -1,3 +1,4 @@
+// Definindo URL para requisições de usuário
 const API_URL = "http://localhost:8080/auth";
 
 //  Registrando novo usuário
